@@ -52,13 +52,22 @@ class ImageEditor {
 			getString: (value) => `grayscale(${value})`,
 		},
 		{
-			id: "contrast",
+			id: "invert",
 			min: 0,
 			max: 100,
 			step: 10,
 			default: 0,
-			label: "Contrast",
-			getString: (value) => `contrast(${value}%)`,
+			label: "Invert",
+			getString: (value) => `invert(${value}%)`,
+		},
+		{
+			id: "hue-rotate",
+			min: 0,
+			max: 360,
+			step: 10,
+			default: 0,
+			label: "Hue-rotate",
+			getString: (value) => `hue-rotate(${value}deg)`,
 		},
 	];
 
@@ -98,6 +107,13 @@ class ImageEditor {
 			this.controlsParent.appendChild(blurContainer);
 			filter.input = filterInput;
 		});
+
+		const copyButton = document.createElement("button");
+		copyButton.addEventListener("click", (ev) => {
+			copyCanvasToClipboard(this.canvas);
+		});
+		copyButton.innerText = "Copy to clipboard";
+		this.controlsParent.appendChild(copyButton);
 	}
 
 	/**
@@ -167,6 +183,15 @@ class ImageEditor {
 
 			this.blurRegion(this.canvas, newRectangle);
 		});
+
+		this.canvasCtx.font = "18pt Arial";
+		this.canvasCtx.textAlign = "center";
+		this.canvasCtx.stroke;
+		this.canvasCtx.fillText(
+			"Paste an image to begin",
+			this.canvas.width / 2,
+			this.canvas.height / 2
+		);
 	}
 
 	/**
@@ -189,14 +214,12 @@ class ImageEditor {
 		let filterString = ``;
 		this.filters.forEach((filter) => {
 			if (filter.input?.value && filter.input.value !== "0") {
-				console.log("Value", filter, filter.input.value);
 				const stringForFilter = filter.getString(filter.input.value);
 				filterString = `${filterString} ${stringForFilter}`;
 			}
 		});
 
 		workingCtx.filter = filterString;
-		console.log(filterString);
 		workingCtx.drawImage(
 			canvas,
 			region.x,
