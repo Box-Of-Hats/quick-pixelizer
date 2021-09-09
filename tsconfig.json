@@ -1,0 +1,10 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "strict": true,
+    "lib": [
+      "DOM",
+      "ES2020"
+    ]
+  },
+}

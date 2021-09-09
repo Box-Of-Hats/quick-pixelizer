@@ -1,0 +1,11 @@
+canvas {
+	border: 1px solid black;
+	margin: 1rem;
+	min-width: 1rem;
+	min-height: 1rem;
+	position: relative;
+}
+
+.image-editor {
+	background-color: rgb(51, 48, 66);
+}
