@@ -83,8 +83,12 @@ class ImageEditor {
 			};
 			this.selections.push(newRectangle);
 
+			this.workingCanvas.height = height;
+			this.workingCanvas.width = width;
+
+			//Draw a rectangle on the main canvas
 			this.canvasCtx.beginPath();
-			this.canvasCtx.strokeStyle = "#F00";
+			this.canvasCtx.strokeStyle = "#FFCD710e";
 			this.canvasCtx.strokeRect(startX, startY, width, height);
 			this.startMouse = undefined;
 
@@ -92,30 +96,37 @@ class ImageEditor {
 		});
 	}
 
+	/**
+	 * Blur a region on the canvas
+	 *
+	 * @param canvas
+	 * @param region
+	 */
 	blurRegion = (canvas: HTMLCanvasElement, region: Rectangle) => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) {
 			throw "No context for canvas";
 		}
 
-		const regionData = ctx.getImageData(
-			region.x,
-			region.y,
-			region.width,
-			region.height
-		);
-
-		const image = new Image();
-		image.src;
-
 		const workingCtx = this.workingCanvas.getContext("2d");
 		if (workingCtx === null) {
 			throw "No context found for working canvas";
 		}
 
-		workingCtx.drawImage(canvas, 0, 0, region.width, region.height);
+		workingCtx.filter = "grayscale(1) blur(10px)";
+		workingCtx.drawImage(
+			canvas,
+			region.x,
+			region.y,
+			region.width,
+			region.height,
+			0,
+			0,
+			region.width,
+			region.height
+		);
 
-		// regionData.
+		this.canvasCtx.drawImage(this.workingCanvas, region.x, region.y);
 	};
 }
 
@@ -133,7 +144,7 @@ function getImageFromClipboard(ev: ClipboardEvent) {
 
 function init() {
 	const body = document.querySelector("body")!;
-	const editor = new ImageEditor(body);
+	const _ = new ImageEditor(body);
 }
 
 init();
