@@ -8,4 +8,25 @@ canvas {
 
 .image-editor {
 	background-color: rgb(51, 48, 66);
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+}
+
+.image-editor li,
+.image-editor ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+* {
+	color: rgb(255, 255, 255);
+	accent-color: rgb(255, 255, 255);
+}
+
+.image-editor li {
+	display: flex;
+	gap: 1rem;
+	justify-content: space-between;
 }

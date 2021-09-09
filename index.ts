@@ -8,15 +8,61 @@ interface Rectangle extends Point {
 	width: number;
 }
 
+interface Filter {
+	id: string;
+	min: number;
+	max: number;
+	step: number;
+	label: string;
+	input?: HTMLInputElement;
+	getString: (value: string) => string;
+	default: number;
+}
+
 class ImageEditor {
 	private selections: Rectangle[] = [];
 	private parent: HTMLElement;
 	private startMouse: Point | undefined;
 	private canvas: HTMLCanvasElement;
 	private canvasCtx: CanvasRenderingContext2D;
+	/**
+	 * Hidden canvas used to perform region modifications
+	 */
 	private workingCanvas: HTMLCanvasElement = document.createElement("canvas");
 
-	constructor(parent: HTMLElement) {
+	private controlsParent: HTMLElement;
+
+	private filters: Filter[] = [
+		{
+			id: "blur",
+			min: 0,
+			max: 10,
+			step: 1,
+			label: "Blur",
+			default: 10,
+			getString: (value) => `blur(${value}px)`,
+		},
+		{
+			id: "grayscale",
+			min: 0,
+			max: 1,
+			step: 0.1,
+			default: 0,
+			label: "Greyscale",
+			getString: (value) => `grayscale(${value})`,
+		},
+		{
+			id: "contrast",
+			min: 0,
+			max: 100,
+			step: 10,
+			default: 0,
+			label: "Contrast",
+			getString: (value) => `contrast(${value}%)`,
+		},
+	];
+
+	constructor(parent: HTMLElement, controlsParent: HTMLElement) {
 		this.parent = parent;
 
 		const canvas = parent.querySelector<HTMLCanvasElement>("canvas");
@@ -28,11 +74,38 @@ class ImageEditor {
 		this.canvas = canvas;
 		this.canvasCtx = ctx;
 
-		document.body.appendChild(this.workingCanvas);
+		this.controlsParent = controlsParent;
 
 		this.init();
 	}
 
+	private addControls() {
+		this.filters.forEach((filter) => {
+			const filterId = `control--${filter.id}`;
+			const filterInput = document.createElement("input");
+			filterInput.type = "range";
+			filterInput.min = filter.min.toString();
+			filterInput.max = filter.max.toString();
+			filterInput.step = filter.step.toString();
+			filterInput.dataset.id = filterId;
+			filterInput.value = filter.default.toString();
+			const filterLabel = document.createElement("label");
+			filterLabel.innerText = filter.label;
+			filterLabel.htmlFor = filterId;
+			const blurContainer = document.createElement("li");
+			blurContainer.appendChild(filterLabel);
+			blurContainer.appendChild(filterInput);
+			this.controlsParent.appendChild(blurContainer);
+			filter.input = filterInput;
+		});
+	}
+
+	/**
+	 * Load an image onto the canvas
+	 *
+	 * @param canvas
+	 * @param imageFile
+	 */
 	loadImageIntoCanvas(canvas: HTMLCanvasElement, imageFile: File) {
 		const img = new Image();
 		const ctx = canvas.getContext("2d");
@@ -49,7 +122,11 @@ class ImageEditor {
 		img.src = URL.createObjectURL(imageFile);
 	}
 
+	/**
+	 * Initialize state and event listeners
+	 */
 	init() {
+		this.addControls();
 		this.parent.addEventListener("paste", (ev) => {
 			const imageFile = getImageFromClipboard(ev);
 			if (!imageFile) {
@@ -86,10 +163,6 @@ class ImageEditor {
 			this.workingCanvas.height = height;
 			this.workingCanvas.width = width;
 
-			//Draw a rectangle on the main canvas
-			this.canvasCtx.beginPath();
-			this.canvasCtx.strokeStyle = "#FFCD710e";
-			this.canvasCtx.strokeRect(startX, startY, width, height);
 			this.startMouse = undefined;
 
 			this.blurRegion(this.canvas, newRectangle);
@@ -113,7 +186,17 @@ class ImageEditor {
 			throw "No context found for working canvas";
 		}
 
-		workingCtx.filter = "grayscale(1) blur(10px)";
+		let filterString = ``;
+		this.filters.forEach((filter) => {
+			if (filter.input?.value && filter.input.value !== "0") {
+				console.log("Value", filter, filter.input.value);
+				const stringForFilter = filter.getString(filter.input.value);
+				filterString = `${filterString} ${stringForFilter}`;
+			}
+		});
+
+		workingCtx.filter = filterString;
+		console.log(filterString);
 		workingCtx.drawImage(
 			canvas,
 			region.x,
@@ -142,9 +225,24 @@ function getImageFromClipboard(ev: ClipboardEvent) {
 	}
 }
 
+function copyCanvasToClipboard(canvas: HTMLCanvasElement) {
+	canvas.toBlob(function (blob) {
+		if (!blob) {
+			return;
+		}
+		//@ts-ignore
+		const item = new ClipboardItem({ "image/png": blob });
+		//@ts-ignore
+		navigator.clipboard.write([item]);
+	});
+}
+
 function init() {
-	const body = document.querySelector("body")!;
-	const _ = new ImageEditor(body);
+	const body = document.querySelector<HTMLElement>("body")!;
+	const controls = document.querySelector<HTMLElement>(
+		".image-editor__controls"
+	)!;
+	const _ = new ImageEditor(body, controls);
 }
 
 init();
