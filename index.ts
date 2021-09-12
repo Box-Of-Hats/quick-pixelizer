@@ -32,6 +32,8 @@ class ImageEditor {
 
 	private controlsParent: HTMLElement;
 
+	private image?: File;
+
 	private filters: Filter[] = [
 		{
 			id: "blur",
@@ -106,6 +108,10 @@ class ImageEditor {
 			blurContainer.appendChild(filterInput);
 			this.controlsParent.appendChild(blurContainer);
 			filter.input = filterInput;
+
+			filterInput.addEventListener("change", () => {
+				this.reRender();
+			})
 		});
 
 		const copyButton = document.createElement("button");
@@ -122,20 +128,36 @@ class ImageEditor {
 	 * @param canvas
 	 * @param imageFile
 	 */
-	loadImageIntoCanvas(canvas: HTMLCanvasElement, imageFile: File) {
-		const img = new Image();
-		const ctx = canvas.getContext("2d");
-		if (!ctx) {
-			throw "Can't load context for canvas";
+	async loadImageIntoCanvas(canvas: HTMLCanvasElement, imageFile: File) {
+		return new Promise<void>((res, rej) => {
+			const img = new Image();
+			const ctx = canvas.getContext("2d");
+			if (!ctx) {
+				rej("Can't load context for canvas");
+				return;
+			}
+
+			img.src = URL.createObjectURL(imageFile);
+
+			img.addEventListener("load", () => {
+				canvas.height = img.height;
+				canvas.width = img.width;
+				ctx.drawImage(img, 0, 0);
+				res();
+			});
+
+		})
+	}
+
+	private async reRender() {
+		if (!this.image) {
+			console.error("No image loaded")
+			return;
 		}
-
-		img.addEventListener("load", () => {
-			canvas.height = img.height;
-			canvas.width = img.width;
-			ctx.drawImage(img, 0, 0);
-		});
-
-		img.src = URL.createObjectURL(imageFile);
+		await this.loadImageIntoCanvas(this.canvas, this.image);
+		this.selections.forEach(async selection => {
+			await this.blurRegion(this.canvas, selection);
+		})
 	}
 
 	/**
@@ -143,13 +165,14 @@ class ImageEditor {
 	 */
 	init() {
 		this.addControls();
-		this.parent.addEventListener("paste", (ev) => {
+		this.parent.addEventListener("paste", async (ev) => {
 			const imageFile = getImageFromClipboard(ev);
 			if (!imageFile) {
 				console.error("No image found in clipboard");
 				return;
 			}
-			this.loadImageIntoCanvas(this.canvas, imageFile);
+			this.image = imageFile;
+			await this.loadImageIntoCanvas(this.canvas, imageFile);
 		});
 
 		this.canvas.addEventListener("pointerdown", (ev) => {
@@ -200,7 +223,7 @@ class ImageEditor {
 	 * @param canvas
 	 * @param region
 	 */
-	blurRegion = (canvas: HTMLCanvasElement, region: Rectangle) => {
+	blurRegion = async (canvas: HTMLCanvasElement, region: Rectangle) => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) {
 			throw "No context for canvas";
@@ -213,7 +236,7 @@ class ImageEditor {
 
 		let filterString = ``;
 		this.filters.forEach((filter) => {
-			if (filter.input?.value && filter.input.value !== "0") {
+			if (filter.input?.value) {
 				const stringForFilter = filter.getString(filter.input.value);
 				filterString = `${filterString} ${stringForFilter}`;
 			}
