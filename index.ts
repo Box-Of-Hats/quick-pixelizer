@@ -25,6 +25,7 @@ class ImageEditor {
 	private startMouse: Point | undefined;
 	private canvas: HTMLCanvasElement;
 	private canvasCtx: CanvasRenderingContext2D;
+
 	/**
 	 * Hidden canvas used to perform region modifications
 	 */
@@ -38,10 +39,10 @@ class ImageEditor {
 		{
 			id: "blur",
 			min: 0,
-			max: 10,
+			max: 20,
 			step: 1,
 			label: "Blur",
-			default: 10,
+			default: 20,
 			getString: (value) => `blur(${value}px)`,
 		},
 		{
@@ -82,6 +83,7 @@ class ImageEditor {
 		if (!canvas || !ctx) {
 			throw "Could not get canvas.";
 		}
+
 		this.canvas = canvas;
 		this.canvasCtx = ctx;
 
@@ -91,8 +93,14 @@ class ImageEditor {
 	}
 
 	private addControls() {
+		const filtersContainer = document.createElement("div");
+		filtersContainer.classList.add("image-editor__filters");
+		this.controlsParent.append(filtersContainer);
+
+		// Render a control for each of the filters
 		this.filters.forEach((filter) => {
 			const filterId = `control--${filter.id}`;
+
 			const filterInput = document.createElement("input");
 			filterInput.type = "range";
 			filterInput.min = filter.min.toString();
@@ -100,26 +108,50 @@ class ImageEditor {
 			filterInput.step = filter.step.toString();
 			filterInput.dataset.id = filterId;
 			filterInput.value = filter.default.toString();
-			const filterLabel = document.createElement("label");
-			filterLabel.innerText = filter.label;
-			filterLabel.htmlFor = filterId;
-			const blurContainer = document.createElement("li");
-			blurContainer.appendChild(filterLabel);
-			blurContainer.appendChild(filterInput);
-			this.controlsParent.appendChild(blurContainer);
 			filter.input = filterInput;
 
-			filterInput.addEventListener("change", () => {
+			const filterLabel = document.createElement("label");
+			filterLabel.innerText = `${filter.label} ${filterInput.value}`;
+			filterLabel.htmlFor = filterId;
+			filterLabel.draggable = false;
+
+			const filterContainer = document.createElement("li");
+			filterContainer.appendChild(filterLabel);
+			filterContainer.appendChild(filterInput);
+
+			filtersContainer.appendChild(filterContainer);
+			filterInput.addEventListener("change", (ev) => {
 				this.reRender();
+			});
+			filterInput.addEventListener("mousemove", () => {
+				filterLabel.innerText = `${filter.label} ${filterInput.value}`;
 			});
 		});
 
-		const copyButton = document.createElement("button");
-		copyButton.addEventListener("click", (ev) => {
-			copyCanvasToClipboard(this.canvas);
-		});
-		copyButton.innerText = "Copy to clipboard";
-		this.controlsParent.appendChild(copyButton);
+		const buttonContainer = document.createElement("div");
+		buttonContainer.classList.add("image-editor__buttons");
+		this.controlsParent.appendChild(buttonContainer);
+
+		const undoButton = createMaterialButton("undo", "Undo", () =>
+			this.undoSelection()
+		);
+		buttonContainer.appendChild(undoButton);
+
+		const copyButton = createMaterialButton(
+			"content_copy",
+			"Copy to clipboard",
+			(event) => {
+				const successClass = "button--success";
+				copyCanvasToClipboard(this.canvas);
+				copyButton.innerText = "check_circle_outline";
+				copyButton.classList.add(successClass);
+				setTimeout(() => {
+					copyButton.innerText = "content_copy";
+					copyButton.classList.remove(successClass);
+				}, 1500);
+			}
+		);
+		buttonContainer.appendChild(copyButton);
 	}
 
 	/**
@@ -189,7 +221,7 @@ class ImageEditor {
 		});
 
 		this.canvas.addEventListener("pointerup", (ev) => {
-			if (!this.startMouse) return;
+			if (!this.startMouse || !this.image) return;
 
 			const startX = Math.min(this.startMouse.x, ev.offsetX);
 			const startY = Math.min(this.startMouse.y, ev.offsetY);
@@ -210,6 +242,10 @@ class ImageEditor {
 			this.blurRegion(this.canvas, newRectangle);
 		});
 
+		this.parent.addEventListener("keydown", (keyEvent) => {
+			this.handleKeyPress(keyEvent);
+		});
+
 		this.canvasCtx.font = "18pt Arial";
 		this.canvasCtx.textAlign = "center";
 		this.canvasCtx.stroke;
@@ -218,6 +254,21 @@ class ImageEditor {
 			this.canvas.width / 2,
 			this.canvas.height / 2
 		);
+	}
+
+	private async handleKeyPress(event: KeyboardEvent) {
+		if (event.ctrlKey && event.key == "z") {
+			event.preventDefault();
+			this.undoSelection();
+		}
+	}
+
+	/**
+	 * Undo the most recent selection
+	 */
+	private async undoSelection() {
+		this.selections.pop();
+		await this.reRender();
 	}
 
 	/**
@@ -289,6 +340,29 @@ function copyCanvasToClipboard(canvas: HTMLCanvasElement) {
 	});
 }
 
+/**
+ * Create a new material icon button
+ *
+ * @param iconName The name of the icon, corresponding to material icons
+ * @param actionText User-facing text describing the button action
+ * @param onClick
+ * @returns
+ */
+function createMaterialButton(
+	iconName: string,
+	actionText: string,
+	onClick: (ev: MouseEvent) => void
+): HTMLElement {
+	const button = document.createElement("button");
+	button.classList.add("material-icons");
+	button.classList.add("button--small");
+	button.title = actionText;
+	button.addEventListener("click", (ev) => onClick(ev));
+	button.innerText = iconName;
+	return button;
+}
+
+// Calling the component
 function init() {
 	const body = document.querySelector<HTMLElement>("body")!;
 	const controls = document.querySelector<HTMLElement>(
@@ -296,5 +370,4 @@ function init() {
 	)!;
 	const _ = new ImageEditor(body, controls);
 }
-
 init();
