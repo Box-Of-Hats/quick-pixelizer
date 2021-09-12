@@ -19,6 +19,9 @@ interface Filter {
 	default: number;
 }
 
+/**
+ * An image editor component
+ */
 class ImageEditor {
 	private selections: Rectangle[] = [];
 	private parent: HTMLElement;
@@ -93,6 +96,9 @@ class ImageEditor {
 		this.init();
 	}
 
+	/**
+	 * Create the UI controls for the component
+	 */
 	private addControls() {
 		const filtersContainer = document.createElement("div");
 		filtersContainer.classList.add("image-editor__filters");
@@ -265,6 +271,11 @@ class ImageEditor {
 		);
 	}
 
+	/**
+	 * Handle a keypress event from a user
+	 *
+	 * @param event
+	 */
 	private async handleKeyPress(event: KeyboardEvent) {
 		if (event.ctrlKey && event.key === "z") {
 			event.preventDefault();
@@ -306,6 +317,7 @@ class ImageEditor {
 			throw "No context for canvas";
 		}
 
+		// Paint the selected region to the working canvas
 		const workingCtx = this.workingCanvas.getContext("2d");
 		this.workingCanvas.height = region.height;
 		this.workingCanvas.width = region.width;
@@ -314,6 +326,7 @@ class ImageEditor {
 			throw "No context found for working canvas";
 		}
 
+		// Apply filters to selection on working canvas
 		let filterString = ``;
 		this.filters.forEach((filter) => {
 			if (filter.input?.value) {
@@ -321,7 +334,6 @@ class ImageEditor {
 				filterString = `${filterString} ${stringForFilter}`;
 			}
 		});
-
 		workingCtx.filter = filterString;
 		workingCtx.drawImage(
 			canvas,
@@ -335,11 +347,27 @@ class ImageEditor {
 			region.height
 		);
 
+		// Add feint rectangle around selection
+		this.canvasCtx.strokeStyle = "#00000030";
+		this.canvasCtx.strokeRect(
+			region.x,
+			region.y,
+			region.width,
+			region.height
+		);
+
+		// Copy the contents of the working canvas back to the main canvas
 		this.canvasCtx.drawImage(this.workingCanvas, region.x, region.y);
 	};
 }
 
-function getImageFromClipboard(ev: ClipboardEvent) {
+/**
+ * Retrieve an image from the clipboard
+ *
+ * @param ev
+ * @returns
+ */
+function getImageFromClipboard(ev: ClipboardEvent): File | undefined {
 	if (!ev.clipboardData?.items) return;
 
 	for (let index = 0; index < ev.clipboardData.items.length; index++) {
@@ -351,6 +379,10 @@ function getImageFromClipboard(ev: ClipboardEvent) {
 	}
 }
 
+/**
+ * Copy the contents of a canvas to the clipboard
+ * @param canvas
+ */
 function copyCanvasToClipboard(canvas: HTMLCanvasElement) {
 	canvas.toBlob(function (blob) {
 		if (!blob) {
