@@ -43,7 +43,8 @@ class ImageEditor {
 			step: 1,
 			label: "Blur",
 			default: 20,
-			getString: (value) => `blur(${value}px)`,
+			getString: (value) =>
+				`blur(${value}px) blur(${parseInt(value) / 2}px)`,
 		},
 		{
 			id: "grayscale",
