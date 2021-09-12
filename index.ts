@@ -265,9 +265,14 @@ class ImageEditor {
 	}
 
 	private async handleKeyPress(event: KeyboardEvent) {
-		if (event.ctrlKey && event.key == "z") {
+		if (event.ctrlKey && event.key === "z") {
 			event.preventDefault();
 			this.undoSelection();
+		}
+
+		if (event.ctrlKey && event.key === "c") {
+			event.preventDefault();
+			this.copyToClipboard();
 		}
 	}
 
@@ -275,8 +280,17 @@ class ImageEditor {
 	 * Undo the most recent selection
 	 */
 	private async undoSelection() {
+		console.log("Undo");
 		this.selections.pop();
 		await this.reRender();
+	}
+
+	/**
+	 * Copy the canvas to the clipboard
+	 */
+	private async copyToClipboard() {
+		copyCanvasToClipboard(this.canvas);
+		console.log("Copied to clipboard");
 	}
 
 	/**
