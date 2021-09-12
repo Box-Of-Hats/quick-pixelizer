@@ -218,6 +218,14 @@ class ImageEditor {
 				x: ev.offsetX,
 				y: ev.offsetY,
 			};
+
+			// Add starting indicator to canvas
+			this.canvasCtx.beginPath();
+			this.canvasCtx.arc(ev.offsetX, ev.offsetY, 6, 0, 2 * Math.PI);
+			this.canvasCtx.fillStyle = "orange";
+			this.canvasCtx.strokeStyle = "black";
+			this.canvasCtx.fill();
+			this.canvasCtx.stroke();
 		});
 
 		this.canvas.addEventListener("pointerup", (ev) => {
@@ -239,7 +247,7 @@ class ImageEditor {
 
 			this.startMouse = undefined;
 
-			this.blurRegion(this.canvas, newRectangle);
+			this.reRender();
 		});
 
 		this.parent.addEventListener("keydown", (keyEvent) => {
