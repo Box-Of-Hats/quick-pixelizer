@@ -111,7 +111,7 @@ class ImageEditor {
 
 			filterInput.addEventListener("change", () => {
 				this.reRender();
-			})
+			});
 		});
 
 		const copyButton = document.createElement("button");
@@ -145,19 +145,24 @@ class ImageEditor {
 				ctx.drawImage(img, 0, 0);
 				res();
 			});
-
-		})
+		});
 	}
 
+	/**
+	 * Re-render the edited image in the canvas
+	 *
+	 * @returns
+	 */
 	private async reRender() {
 		if (!this.image) {
-			console.error("No image loaded")
+			console.error("No image loaded");
 			return;
 		}
 		await this.loadImageIntoCanvas(this.canvas, this.image);
-		this.selections.forEach(async selection => {
+
+		this.selections.forEach(async (selection, index) => {
 			await this.blurRegion(this.canvas, selection);
-		})
+		});
 	}
 
 	/**
@@ -171,6 +176,7 @@ class ImageEditor {
 				console.error("No image found in clipboard");
 				return;
 			}
+			this.selections = [];
 			this.image = imageFile;
 			await this.loadImageIntoCanvas(this.canvas, imageFile);
 		});
@@ -198,9 +204,6 @@ class ImageEditor {
 				width,
 			};
 			this.selections.push(newRectangle);
-
-			this.workingCanvas.height = height;
-			this.workingCanvas.width = width;
 
 			this.startMouse = undefined;
 
@@ -230,6 +233,9 @@ class ImageEditor {
 		}
 
 		const workingCtx = this.workingCanvas.getContext("2d");
+		this.workingCanvas.height = region.height;
+		this.workingCanvas.width = region.width;
+
 		if (workingCtx === null) {
 			throw "No context found for working canvas";
 		}
