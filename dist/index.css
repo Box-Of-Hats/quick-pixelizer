@@ -100,3 +100,10 @@ label,
 button {
 	user-select: none;
 }
+
+.github-link {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	z-index: 2;
+}
