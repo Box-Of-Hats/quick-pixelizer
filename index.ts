@@ -18,6 +18,15 @@ interface Filter {
 	default: number;
 }
 
+interface UserSettings {
+	/**
+	 * Default values for filters
+	 */
+	defaultFilters: {
+		[key in FilterType]?: number;
+	};
+}
+
 type FilterType =
 	| "blur"
 	| "hue-rotate"
@@ -45,13 +54,15 @@ class ImageEditor {
 
 	private image?: File;
 
+	private localStorageKey = "user-settings";
+
 	private filters: { [key in FilterType]: Filter } = {
 		blur: {
 			min: 0,
 			max: 20,
 			step: 1,
 			label: "Blur",
-			default: 20,
+			default: 0,
 			getString: (value) =>
 				`blur(${value}px) blur(${parseInt(value) / 2}px)`,
 		},
@@ -83,7 +94,7 @@ class ImageEditor {
 			min: 0,
 			max: 25,
 			step: 1,
-			default: 0,
+			default: 10,
 			label: "Pixelate",
 			getString: (value) => "", //Pixelation happens elsewhere
 		},
@@ -180,6 +191,22 @@ class ImageEditor {
 			}
 		);
 		buttonContainer.appendChild(copyButton);
+
+		const saveDefaults = createMaterialButton(
+			"save",
+			"Save filters",
+			(event) => {
+				const successClass = "button--success";
+				this.saveStateToLocalStorage();
+				saveDefaults.innerText = "check_circle_outline";
+				saveDefaults.classList.add(successClass);
+				setTimeout(() => {
+					saveDefaults.innerText = "save";
+					saveDefaults.classList.remove(successClass);
+				}, 1500);
+			}
+		);
+		buttonContainer.appendChild(saveDefaults);
 	}
 
 	/**
@@ -229,6 +256,7 @@ class ImageEditor {
 	 * Initialize state and event listeners
 	 */
 	init() {
+		this.loadStateFromLocalStorage();
 		this.addControls();
 		this.parent.addEventListener("paste", async (ev) => {
 			const imageFile = getImageFromClipboard(ev);
@@ -423,6 +451,46 @@ class ImageEditor {
 		// Copy the contents of the working canvas back to the main canvas
 		this.canvasCtx.drawImage(this.workingCanvas, region.x, region.y);
 	};
+
+	private saveStateToLocalStorage() {
+		const userSettings: UserSettings = {
+			defaultFilters: {},
+		};
+
+		for (const filterKey in this.filters) {
+			const filterType = filterKey as FilterType;
+			const filter = this.filters[filterType];
+
+			userSettings.defaultFilters[filterType] = parseInt(
+				filter.input?.value ?? "0"
+			);
+		}
+
+		window.localStorage.setItem(
+			this.localStorageKey,
+			JSON.stringify(userSettings)
+		);
+	}
+
+	private loadStateFromLocalStorage() {
+		const userSettings = JSON.parse(
+			window.localStorage.getItem(this.localStorageKey) ?? "0"
+		) as UserSettings | undefined;
+
+		if (!userSettings?.defaultFilters) {
+			console.info("No defaults saved for user");
+			return;
+		}
+		console.info("Loading default values for user", userSettings);
+
+		for (const filterKey in this.filters) {
+			const filterType = filterKey as FilterType;
+			const filter = this.filters[filterType];
+
+			filter.default =
+				userSettings.defaultFilters[filterType] ?? filter.default;
+		}
+	}
 }
 
 /**
