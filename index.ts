@@ -9,7 +9,6 @@ interface Rectangle extends Point {
 }
 
 interface Filter {
-	id: string;
 	min: number;
 	max: number;
 	step: number;
@@ -18,6 +17,14 @@ interface Filter {
 	getString: (value: string) => string;
 	default: number;
 }
+
+type FilterType =
+	| "blur"
+	| "hue-rotate"
+	| "invert"
+	| "pixelate"
+	| "greyscale"
+	| "outline";
 
 /**
  * An image editor component
@@ -38,9 +45,8 @@ class ImageEditor {
 
 	private image?: File;
 
-	private filters: Filter[] = [
-		{
-			id: "blur",
+	private filters: { [key in FilterType]: Filter } = {
+		blur: {
 			min: 0,
 			max: 20,
 			step: 1,
@@ -49,8 +55,7 @@ class ImageEditor {
 			getString: (value) =>
 				`blur(${value}px) blur(${parseInt(value) / 2}px)`,
 		},
-		{
-			id: "grayscale",
+		greyscale: {
 			min: 0,
 			max: 1,
 			step: 0.1,
@@ -58,8 +63,7 @@ class ImageEditor {
 			label: "Greyscale",
 			getString: (value) => `grayscale(${value})`,
 		},
-		{
-			id: "invert",
+		invert: {
 			min: 0,
 			max: 100,
 			step: 10,
@@ -67,8 +71,7 @@ class ImageEditor {
 			label: "Invert",
 			getString: (value) => `invert(${value}%)`,
 		},
-		{
-			id: "hue-rotate",
+		"hue-rotate": {
 			min: 0,
 			max: 360,
 			step: 10,
@@ -76,7 +79,23 @@ class ImageEditor {
 			label: "Hue-rotate",
 			getString: (value) => `hue-rotate(${value}deg)`,
 		},
-	];
+		pixelate: {
+			min: 0,
+			max: 10,
+			step: 1,
+			default: 0,
+			label: "Pixelate",
+			getString: (value) => "", //Pixelation happens elsewhere
+		},
+		outline: {
+			default: 0,
+			min: 0,
+			max: 100,
+			step: 10,
+			getString: () => "",
+			label: "Outline",
+		},
+	};
 
 	constructor(parent: HTMLElement, controlsParent: HTMLElement) {
 		this.parent = parent;
@@ -92,6 +111,7 @@ class ImageEditor {
 		this.canvasCtx = ctx;
 
 		this.controlsParent = controlsParent;
+		this.parent.appendChild(this.workingCanvas); //TODO: remove
 
 		this.init();
 	}
@@ -105,8 +125,9 @@ class ImageEditor {
 		this.controlsParent.append(filtersContainer);
 
 		// Render a control for each of the filters
-		this.filters.forEach((filter) => {
-			const filterId = `control--${filter.id}`;
+		for (const filterKey in this.filters) {
+			const filter = this.filters[filterKey as FilterType];
+			const filterId = `control--${filterKey}`;
 
 			const filterInput = document.createElement("input");
 			filterInput.type = "range";
@@ -133,7 +154,7 @@ class ImageEditor {
 			filterInput.addEventListener("mousemove", () => {
 				filterLabel.innerText = `${filter.label} ${filterInput.value}`;
 			});
-		});
+		}
 
 		const buttonContainer = document.createElement("div");
 		buttonContainer.classList.add("image-editor__buttons");
@@ -200,7 +221,7 @@ class ImageEditor {
 		await this.loadImageIntoCanvas(this.canvas, this.image);
 
 		this.selections.forEach(async (selection, index) => {
-			await this.blurRegion(this.canvas, selection);
+			await this.applyFiltersToRegion(this.canvas, selection);
 		});
 	}
 
@@ -306,12 +327,15 @@ class ImageEditor {
 	}
 
 	/**
-	 * Blur a region on the canvas
+	 * Apply filters to a region on the canvas
 	 *
 	 * @param canvas
 	 * @param region
 	 */
-	blurRegion = async (canvas: HTMLCanvasElement, region: Rectangle) => {
+	applyFiltersToRegion = async (
+		canvas: HTMLCanvasElement,
+		region: Rectangle
+	) => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) {
 			throw "No context for canvas";
@@ -328,12 +352,14 @@ class ImageEditor {
 
 		// Apply filters to selection on working canvas
 		let filterString = ``;
-		this.filters.forEach((filter) => {
+		for (const filterKey in this.filters) {
+			const filter = this.filters[filterKey as FilterType];
 			if (filter.input?.value) {
 				const stringForFilter = filter.getString(filter.input.value);
 				filterString = `${filterString} ${stringForFilter}`;
 			}
-		});
+		}
+
 		workingCtx.filter = filterString;
 		workingCtx.drawImage(
 			canvas,
@@ -347,14 +373,19 @@ class ImageEditor {
 			region.height
 		);
 
-		// Add feint rectangle around selection
-		this.canvasCtx.strokeStyle = "#00000030";
-		this.canvasCtx.strokeRect(
-			region.x,
-			region.y,
-			region.width,
-			region.height
+		// Add feint outline around selection
+		const outlineValue = parseInt(
+			this.filters.outline?.input?.value ?? "0"
 		);
+		if (outlineValue > 0) {
+			this.canvasCtx.strokeStyle = `#000000${outlineValue}`;
+			this.canvasCtx.strokeRect(
+				region.x,
+				region.y,
+				region.width,
+				region.height
+			);
+		}
 
 		// Copy the contents of the working canvas back to the main canvas
 		this.canvasCtx.drawImage(this.workingCanvas, region.x, region.y);
