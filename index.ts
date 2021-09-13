@@ -81,7 +81,7 @@ class ImageEditor {
 		},
 		pixelate: {
 			min: 0,
-			max: 10,
+			max: 25,
 			step: 1,
 			default: 0,
 			label: "Pixelate",
@@ -91,7 +91,7 @@ class ImageEditor {
 			default: 0,
 			min: 0,
 			max: 100,
-			step: 10,
+			step: 25,
 			getString: () => "",
 			label: "Outline",
 		},
@@ -360,18 +360,51 @@ class ImageEditor {
 			}
 		}
 
-		workingCtx.filter = filterString;
-		workingCtx.drawImage(
-			canvas,
-			region.x,
-			region.y,
-			region.width,
-			region.height,
-			0,
-			0,
-			region.width,
-			region.height
+		const pixelateValue = parseInt(
+			this.filters.pixelate.input?.value ?? "0"
 		);
+		if (pixelateValue > 0) {
+			// Pixelate the region
+			const scaleFactor = 1 / pixelateValue;
+			workingCtx.scale(scaleFactor, scaleFactor);
+			workingCtx.drawImage(
+				canvas,
+				region.x,
+				region.y,
+				region.width,
+				region.height,
+				0,
+				0,
+				region.width,
+				region.height
+			);
+
+			workingCtx.resetTransform();
+			workingCtx.scale(pixelateValue, pixelateValue);
+			workingCtx.filter = filterString;
+
+			workingCtx.drawImage(
+				this.workingCanvas,
+				0,
+				0,
+				this.workingCanvas.width,
+				this.workingCanvas.height
+			);
+		} else {
+			// Draw the region normally
+			workingCtx.filter = filterString;
+			workingCtx.drawImage(
+				canvas,
+				region.x,
+				region.y,
+				region.width,
+				region.height,
+				0,
+				0,
+				region.width,
+				region.height
+			);
+		}
 
 		// Add feint outline around selection
 		const outlineValue = parseInt(
