@@ -122,7 +122,6 @@ class ImageEditor {
 		this.canvasCtx = ctx;
 
 		this.controlsParent = controlsParent;
-		this.parent.appendChild(this.workingCanvas); //TODO: remove
 
 		this.init();
 	}
