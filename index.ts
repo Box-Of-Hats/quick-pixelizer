@@ -206,6 +206,11 @@ class ImageEditor {
 			}
 		);
 		buttonContainer.appendChild(saveDefaults);
+
+		const gitHubLink = document.createElement("a");
+		gitHubLink.innerText = "view on github";
+		gitHubLink.href = "https://github.com/Box-Of-Hats/quick-pixelizer";
+		this.controlsParent.appendChild(gitHubLink);
 	}
 
 	/**
