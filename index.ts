@@ -316,7 +316,13 @@ class ImageEditor {
 
 		this.canvasCtx.font = "18pt Arial";
 		this.canvasCtx.textAlign = "center";
-		this.canvasCtx.stroke;
+		this.canvasCtx.fillStyle = "#FFFFFF";
+		this.canvasCtx.strokeStyle = "#000000";
+		this.canvasCtx.strokeText(
+			"Paste an image to begin",
+			this.canvas.width / 2,
+			this.canvas.height / 2
+		);
 		this.canvasCtx.fillText(
 			"Paste an image to begin",
 			this.canvas.width / 2,
