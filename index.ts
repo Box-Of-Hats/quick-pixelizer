@@ -555,5 +555,9 @@ function init() {
 		".image-editor__controls"
 	)!;
 	const _ = new ImageEditor(body, controls);
+
+	if ("serviceWorker" in navigator) {
+		navigator.serviceWorker.register("/service-worker.js");
+	}
 }
 init();
