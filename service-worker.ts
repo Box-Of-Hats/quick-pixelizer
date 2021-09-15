@@ -16,6 +16,13 @@ self.addEventListener("install", function (event: any) {
 });
 
 self.addEventListener("fetch", async (event: any) => {
+	const cacheHit = await caches.match(event.request);
+
+	if (!cacheHit) {
+		event.respondWith(fetch(event.request));
+		return;
+	}
+
 	const promiseChain = fetch(event.request)
 		.then((response) => {
 			console.log(response);
@@ -26,7 +33,7 @@ self.addEventListener("fetch", async (event: any) => {
 		})
 		.catch(() => {
 			return (
-				caches.match(event.request) ||
+				cacheHit ||
 				new Response(
 					`Device offline and file not in cache: ${event.request?.url}`,
 					{
