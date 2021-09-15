@@ -15,9 +15,26 @@ self.addEventListener("install", function (event: any) {
 	);
 });
 
-self.addEventListener("fetch", (event: any) => {
-	const response = fetch(event.request).catch(() =>
-		caches.match(event.request)
-	);
-	return event.respondWith(response);
+self.addEventListener("fetch", async (event: any) => {
+	const promiseChain = fetch(event.request)
+		.then((response) => {
+			console.log(response);
+			if (response.ok) {
+				return response;
+			}
+			throw `bad response ${response.status}`;
+		})
+		.catch(() => {
+			return (
+				caches.match(event.request) ||
+				new Response(
+					`Device offline and file not in cache: ${event.request?.url}`,
+					{
+						status: 404,
+					}
+				)
+			);
+		});
+
+	event.respondWith(promiseChain);
 });
