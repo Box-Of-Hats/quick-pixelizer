@@ -15,8 +15,9 @@ self.addEventListener("install", function (event: any) {
 	);
 });
 
-self.addEventListener("fetch", async (event: any) => {
-	return event.respondWith(
-		await fetch(event.request).catch(() => caches.match(event.request))
+self.addEventListener("fetch", (event: any) => {
+	const response = fetch(event.request).catch(() =>
+		caches.match(event.request)
 	);
+	return event.respondWith(response);
 });
