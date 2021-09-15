@@ -15,10 +15,11 @@ self.addEventListener("install", function (event: any) {
 	);
 });
 
-self.addEventListener("fetch", function (event: any) {
+self.addEventListener("fetch", (event: any) => {
 	event.respondWith(
-		caches.match(event.request).then(function (response) {
-			return response || fetch(event.request);
+		fetch(event.request).catch(() => {
+			console.debug(`Attempting to serve from cache`, event.request);
+			return caches.match(event.request);
 		})
 	);
 });
