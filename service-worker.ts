@@ -15,33 +15,33 @@ self.addEventListener("install", function (event: any) {
 	);
 });
 
-self.addEventListener("fetch", async (event: any) => {
-	const cacheHit = await caches.match(event.request);
+self.addEventListener("fetch", (event: any) => {
+	caches.match(event.request).then((cacheHit) => {
+		if (!cacheHit) {
+			event.respondWith(fetch(event.request));
+			return;
+		}
 
-	if (!cacheHit) {
-		event.respondWith(fetch(event.request));
-		return;
-	}
+		const promiseChain = fetch(event.request)
+			.then((response) => {
+				console.log(response);
+				if (response.ok) {
+					return response;
+				}
+				throw `bad response ${response.status}`;
+			})
+			.catch(() => {
+				return (
+					cacheHit ||
+					new Response(
+						`Device offline and file not in cache: ${event.request?.url}`,
+						{
+							status: 404,
+						}
+					)
+				);
+			});
 
-	const promiseChain = fetch(event.request)
-		.then((response) => {
-			console.log(response);
-			if (response.ok) {
-				return response;
-			}
-			throw `bad response ${response.status}`;
-		})
-		.catch(() => {
-			return (
-				cacheHit ||
-				new Response(
-					`Device offline and file not in cache: ${event.request?.url}`,
-					{
-						status: 404,
-					}
-				)
-			);
-		});
-
-	event.respondWith(promiseChain);
+		event.respondWith(promiseChain);
+	});
 });
