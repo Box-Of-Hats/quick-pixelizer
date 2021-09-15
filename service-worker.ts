@@ -16,10 +16,7 @@ self.addEventListener("install", function (event: any) {
 });
 
 self.addEventListener("fetch", (event: any) => {
-	event.respondWith(
-		fetch(event.request).catch(() => {
-			console.debug(`Attempting to serve from cache`, event.request);
-			return caches.match(event.request);
-		})
+	return event.respondWith(
+		fetch(event.request).catch(() => caches.match(event.request))
 	);
 });
