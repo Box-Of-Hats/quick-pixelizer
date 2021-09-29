@@ -44,6 +44,7 @@ class ImageEditor {
 	private startMouse: Point | undefined;
 	private canvas: HTMLCanvasElement;
 	private canvasCtx: CanvasRenderingContext2D;
+	private notificationsParent: HTMLElement;
 
 	/**
 	 * Hidden canvas used to perform region modifications
@@ -122,6 +123,8 @@ class ImageEditor {
 		this.canvasCtx = ctx;
 
 		this.controlsParent = controlsParent;
+		this.notificationsParent =
+			document.querySelector(".notifications") || this.parent;
 
 		this.init();
 	}
@@ -179,8 +182,8 @@ class ImageEditor {
 			"content_copy",
 			"Copy to clipboard",
 			(event) => {
+				this.copyToClipboard();
 				const successClass = "button--success";
-				copyCanvasToClipboard(this.canvas);
 				copyButton.innerText = "check_circle_outline";
 				copyButton.classList.add(successClass);
 				setTimeout(() => {
@@ -265,7 +268,11 @@ class ImageEditor {
 		this.parent.addEventListener("paste", async (ev) => {
 			const imageFile = getImageFromClipboard(ev);
 			if (!imageFile) {
-				console.error("No image found in clipboard");
+				notify(
+					this.notificationsParent,
+					"No image found in clipboard",
+					"fail"
+				);
 				return;
 			}
 			this.selections = [];
@@ -345,14 +352,23 @@ class ImageEditor {
 			event.preventDefault();
 			this.copyToClipboard();
 		}
+
+		if (event.ctrlKey && event.key === "s") {
+			event.preventDefault();
+			this.saveStateToLocalStorage();
+		}
 	}
 
 	/**
 	 * Undo the most recent selection
 	 */
 	private async undoSelection() {
-		console.log("Undo");
-		this.selections.pop();
+		const removedSelection = this.selections.pop();
+		if (removedSelection) {
+			notify(this.notificationsParent, "Selection undone", "success");
+		} else {
+			notify(this.notificationsParent, "Nothing to undo", "fail");
+		}
 		await this.reRender();
 	}
 
@@ -361,7 +377,7 @@ class ImageEditor {
 	 */
 	private async copyToClipboard() {
 		copyCanvasToClipboard(this.canvas);
-		console.log("Copied to clipboard");
+		notify(this.notificationsParent, "Copied to clipboard", "success");
 	}
 
 	/**
@@ -463,6 +479,7 @@ class ImageEditor {
 	};
 
 	private saveStateToLocalStorage() {
+		notify(this.notificationsParent, "Saved filters", "success");
 		const userSettings: UserSettings = {
 			defaultFilters: {},
 		};
@@ -557,6 +574,24 @@ function createMaterialButton(
 	button.addEventListener("click", (ev) => onClick(ev));
 	button.innerText = iconName;
 	return button;
+}
+
+function notify(
+	parent: HTMLElement,
+	message: string,
+	state: "success" | "fail"
+) {
+	(state === "success" ? console.log : console.error)(message);
+	const notification = document.createElement("div");
+	notification.innerText = message;
+	notification.classList.add("notification");
+	notification.classList.add(`notification--${state}`);
+
+	parent.append(notification);
+
+	setTimeout(() => {
+		parent.removeChild(notification);
+	}, 2000);
 }
 
 // Calling the component
