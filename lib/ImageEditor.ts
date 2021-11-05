@@ -10,22 +10,21 @@ import { notify } from "./notify";
 
 export class ImageEditor {
 	private selections: Rectangle[] = [];
-	private parent: HTMLElement;
 	private startMouse: Point | undefined;
-	private canvas: HTMLCanvasElement;
 	private canvasCtx: CanvasRenderingContext2D;
-	private notificationsParent: HTMLElement;
-
-	/**
-	 * Hidden canvas used to perform region modifications
-	 */
-	private workingCanvas: HTMLCanvasElement = document.createElement("canvas");
-
-	private controlsParent: HTMLElement;
+	private parent: HTMLElement;
 
 	private image?: File;
 
 	private localStorageKey = "user-settings";
+
+	private dom: {
+		controlsParent: HTMLElement;
+		/**  Hidden canvas used to perform region modifications */
+		workingCanvas: HTMLCanvasElement;
+		notificationsParent: HTMLElement;
+		canvas: HTMLCanvasElement;
+	};
 
 	private filters: {
 		[key in FilterType]: Filter;
@@ -91,12 +90,15 @@ export class ImageEditor {
 			throw "Could not get canvas.";
 		}
 
-		this.canvas = canvas;
 		this.canvasCtx = ctx;
 
-		this.controlsParent = controlsParent;
-		this.notificationsParent =
-			document.querySelector(".notifications") || this.parent;
+		this.dom = {
+			workingCanvas: document.createElement("canvas"),
+			notificationsParent:
+				document.querySelector(".notifications") || this.parent,
+			canvas: canvas,
+			controlsParent: controlsParent,
+		};
 
 		this.init();
 	}
@@ -107,7 +109,7 @@ export class ImageEditor {
 	private addControls() {
 		const filtersContainer = document.createElement("div");
 		filtersContainer.classList.add("image-editor__filters");
-		this.controlsParent.append(filtersContainer);
+		this.dom.controlsParent.append(filtersContainer);
 
 		// Render a control for each of the filters
 		for (const filterKey in this.filters) {
@@ -143,7 +145,7 @@ export class ImageEditor {
 
 		const buttonContainer = document.createElement("div");
 		buttonContainer.classList.add("image-editor__buttons");
-		this.controlsParent.appendChild(buttonContainer);
+		this.dom.controlsParent.appendChild(buttonContainer);
 
 		const undoButton = createMaterialButton("undo", "Undo", () =>
 			this.undoSelection()
@@ -185,7 +187,7 @@ export class ImageEditor {
 		const gitHubLink = document.createElement("a");
 		gitHubLink.innerText = "view on github";
 		gitHubLink.href = "https://github.com/Box-Of-Hats/quick-pixelizer";
-		this.controlsParent.appendChild(gitHubLink);
+		this.dom.controlsParent.appendChild(gitHubLink);
 	}
 
 	/**
@@ -209,6 +211,7 @@ export class ImageEditor {
 				canvas.height = img.height;
 				canvas.width = img.width;
 				ctx.drawImage(img, 0, 0);
+
 				res();
 			});
 		});
@@ -224,10 +227,10 @@ export class ImageEditor {
 			console.error("No image loaded");
 			return;
 		}
-		await this.loadImageIntoCanvas(this.canvas, this.image);
+		await this.loadImageIntoCanvas(this.dom.canvas, this.image);
 
 		this.selections.forEach(async (selection, index) => {
-			await this.applyFiltersToRegion(this.canvas, selection);
+			await this.applyFiltersToRegion(this.dom.canvas, selection);
 		});
 	}
 
@@ -237,11 +240,12 @@ export class ImageEditor {
 	init() {
 		this.loadStateFromLocalStorage();
 		this.addControls();
+
 		this.parent.addEventListener("paste", async (ev) => {
 			const imageFile = getImageFromClipboard(ev);
 			if (!imageFile) {
 				notify(
-					this.notificationsParent,
+					this.dom.notificationsParent,
 					"No image found in clipboard",
 					"fail"
 				);
@@ -249,10 +253,10 @@ export class ImageEditor {
 			}
 			this.selections = [];
 			this.image = imageFile;
-			await this.loadImageIntoCanvas(this.canvas, imageFile);
+			await this.loadImageIntoCanvas(this.dom.canvas, imageFile);
 		});
 
-		this.canvas.addEventListener("pointerdown", (ev) => {
+		this.dom.canvas.addEventListener("pointerdown", (ev) => {
 			this.startMouse = {
 				x: ev.offsetX,
 				y: ev.offsetY,
@@ -267,7 +271,7 @@ export class ImageEditor {
 			this.canvasCtx.stroke();
 		});
 
-		this.canvas.addEventListener("pointerup", (ev) => {
+		this.dom.canvas.addEventListener("pointerup", (ev) => {
 			if (!this.startMouse || !this.image) return;
 
 			const startX = Math.min(this.startMouse.x, ev.offsetX);
@@ -299,13 +303,13 @@ export class ImageEditor {
 		this.canvasCtx.strokeStyle = "#000000";
 		this.canvasCtx.strokeText(
 			"Paste an image to begin",
-			this.canvas.width / 2,
-			this.canvas.height / 2
+			this.dom.canvas.width / 2,
+			this.dom.canvas.height / 2
 		);
 		this.canvasCtx.fillText(
 			"Paste an image to begin",
-			this.canvas.width / 2,
-			this.canvas.height / 2
+			this.dom.canvas.width / 2,
+			this.dom.canvas.height / 2
 		);
 	}
 
@@ -337,9 +341,9 @@ export class ImageEditor {
 	private async undoSelection() {
 		const removedSelection = this.selections.pop();
 		if (removedSelection) {
-			notify(this.notificationsParent, "Selection undone", "success");
+			notify(this.dom.notificationsParent, "Selection undone", "success");
 		} else {
-			notify(this.notificationsParent, "Nothing to undo", "fail");
+			notify(this.dom.notificationsParent, "Nothing to undo", "fail");
 		}
 		await this.reRender();
 	}
@@ -348,8 +352,8 @@ export class ImageEditor {
 	 * Copy the canvas to the clipboard
 	 */
 	private async copyToClipboard() {
-		copyCanvasToClipboard(this.canvas);
-		notify(this.notificationsParent, "Copied to clipboard", "success");
+		copyCanvasToClipboard(this.dom.canvas);
+		notify(this.dom.notificationsParent, "Copied to clipboard", "success");
 	}
 
 	/**
@@ -368,9 +372,9 @@ export class ImageEditor {
 		}
 
 		// Paint the selected region to the working canvas
-		const workingCtx = this.workingCanvas.getContext("2d");
-		this.workingCanvas.height = region.height;
-		this.workingCanvas.width = region.width;
+		const workingCtx = this.dom.workingCanvas.getContext("2d");
+		this.dom.workingCanvas.height = region.height;
+		this.dom.workingCanvas.width = region.width;
 
 		if (workingCtx === null) {
 			throw "No context found for working canvas";
@@ -410,11 +414,11 @@ export class ImageEditor {
 			workingCtx.filter = filterString;
 
 			workingCtx.drawImage(
-				this.workingCanvas,
+				this.dom.workingCanvas,
 				0,
 				0,
-				this.workingCanvas.width,
-				this.workingCanvas.height
+				this.dom.workingCanvas.width,
+				this.dom.workingCanvas.height
 			);
 		} else {
 			// Draw the region normally
@@ -447,11 +451,11 @@ export class ImageEditor {
 		}
 
 		// Copy the contents of the working canvas back to the main canvas
-		this.canvasCtx.drawImage(this.workingCanvas, region.x, region.y);
+		this.canvasCtx.drawImage(this.dom.workingCanvas, region.x, region.y);
 	};
 
 	private saveStateToLocalStorage() {
-		notify(this.notificationsParent, "Saved filters", "success");
+		notify(this.dom.notificationsParent, "Saved filters", "success");
 		const userSettings: UserSettings = {
 			defaultFilters: {},
 		};
