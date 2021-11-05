@@ -1,2 +1,9 @@
-*.js
+# extensions
+*.css
+*.map
+
+# folders
 node_modules
+.cache
+.parcel-cache
+dist/*

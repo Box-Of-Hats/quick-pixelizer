@@ -14,4 +14,3 @@ Available for free at [pixelizer-app.netlify.app/](https://pixelizer-app.netlify
 -   A variety of filters to suit your needs
 -   Save your favorite filters for next time
 -   Copy images directly to the clipboard for convenient use in other apps
--   Optionally installable as a PWA
