@@ -6,6 +6,18 @@ Image editing happens entirely in the browser and images are never transmitted t
 
 Available for free at [pixelizer-app.netlify.app/](https://pixelizer-app.netlify.app/)
 
+### The interface
+
+![The interface](docs/screenshot.jpg)
+
+### Example workflow
+
+1. Paste an image
+2. Draw regions to edit
+3. Adjust filters
+4. Copy to clipboard
+5. Paste anywhere
+
 ![Example workflow](docs/example-workflow.gif)
 
 ## Features

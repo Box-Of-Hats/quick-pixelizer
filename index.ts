@@ -7,4 +7,5 @@ function init() {
 	)!;
 	const _ = new ImageEditor(document.body, controls);
 }
+("Here is something super secret that I dont want you to read");
 init();
