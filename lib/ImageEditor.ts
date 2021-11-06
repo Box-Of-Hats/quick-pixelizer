@@ -278,11 +278,7 @@ export class ImageEditor {
 		this.parent.addEventListener("paste", async (ev) => {
 			const imageFile = getImageFromClipboard(ev);
 			if (!imageFile) {
-				notify(
-					this.dom.notificationsParent,
-					"No image found in clipboard",
-					"fail"
-				);
+				this.notify("No image found in clipboard", "fail");
 				return;
 			}
 			this.selections = [];
@@ -314,17 +310,13 @@ export class ImageEditor {
 			const width = Math.abs(this.startMouse.x - ev.offsetX);
 			const height = Math.abs(this.startMouse.y - ev.offsetY);
 
-			const newRectangle = {
+			const newRectangle: Rectangle = {
 				x: startX,
 				y: startY,
-				height,
-				width,
+				height: height,
+				width: width,
 			};
-			this.selections.push(newRectangle);
-
-			this.startMouse = undefined;
-
-			this.reRender();
+			this.addSelection(newRectangle);
 		});
 
 		this.parent.addEventListener("keydown", (keyEvent) => {
@@ -348,6 +340,16 @@ export class ImageEditor {
 	}
 
 	/**
+	 * Add a new selection to the editor
+	 * @param newRectangle
+	 */
+	private addSelection(newRectangle: Rectangle) {
+		this.selections.push(newRectangle);
+		this.startMouse = undefined;
+		this.reRender();
+	}
+
+	/**
 	 * Handle a keypress event from a user
 	 *
 	 * @param event
@@ -367,6 +369,33 @@ export class ImageEditor {
 			event.preventDefault();
 			this.saveStateToLocalStorage();
 		}
+
+		if (event.ctrlKey && event.key === "a") {
+			event.preventDefault();
+			this.selectWholeCanvas();
+		}
+	}
+
+	/**
+	 * Select the entire canvas
+	 */
+	private selectWholeCanvas() {
+		this.notify("Selected whole canvas", "success");
+		this.addSelection({
+			x: 0,
+			y: 0,
+			height: this.dom.canvas.height,
+			width: this.dom.canvas.width,
+		});
+	}
+
+	/**
+	 * Add a notification
+	 * @param message
+	 * @param state
+	 */
+	private notify(message: string, state: "success" | "fail") {
+		notify(this.dom.notificationsParent, message, state);
 	}
 
 	/**
@@ -375,9 +404,9 @@ export class ImageEditor {
 	private async undoSelection() {
 		const removedSelection = this.selections.pop();
 		if (removedSelection) {
-			notify(this.dom.notificationsParent, "Selection undone", "success");
+			this.notify("Selection undone", "success");
 		} else {
-			notify(this.dom.notificationsParent, "Nothing to undo", "fail");
+			this.notify("Nothing to undo", "fail");
 		}
 		await this.reRender();
 	}
@@ -387,7 +416,7 @@ export class ImageEditor {
 	 */
 	private async copyToClipboard() {
 		copyCanvasToClipboard(this.dom.canvas);
-		notify(this.dom.notificationsParent, "Copied to clipboard", "success");
+		this.notify("Copied to clipboard", "success");
 	}
 
 	/**
@@ -489,7 +518,7 @@ export class ImageEditor {
 	};
 
 	private saveStateToLocalStorage() {
-		notify(this.dom.notificationsParent, "Saved filters", "success");
+		this.notify("Saved filters", "success");
 		const userSettings: UserSettings = {
 			defaultFilters: {},
 		};
