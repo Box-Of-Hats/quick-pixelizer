@@ -4,10 +4,22 @@ import { copyCanvasToClipboard } from "./copyCanvasToClipboard";
 import { createMaterialButton } from "./createMaterialButton";
 import { notify } from "./notify";
 
+//@ts-ignore
+import invertIcon from "../icons/invert.png";
+//@ts-ignore
+import pixelateIcon from "../icons/pixelate.png";
+//@ts-ignore
+import blurIcon from "../icons/blur.png";
+//@ts-ignore
+import greyscaleIcon from "../icons/greyscale.png";
+//@ts-ignore
+import hueRotateIcon from "../icons/hueRotate.png";
+//@ts-ignore
+import outlineIcon from "../icons/outline.png";
+
 /**
  * An image editor component
  */
-
 export class ImageEditor {
 	private selections: Rectangle[] = [];
 	private startMouse: Point | undefined;
@@ -37,6 +49,7 @@ export class ImageEditor {
 			default: 0,
 			getString: (value) =>
 				`blur(${value}px) blur(${parseInt(value) / 2}px)`,
+			icon: blurIcon,
 		},
 		greyscale: {
 			min: 0,
@@ -45,6 +58,7 @@ export class ImageEditor {
 			default: 0,
 			label: "Greyscale",
 			getString: (value) => `grayscale(${value})`,
+			icon: greyscaleIcon,
 		},
 		invert: {
 			min: 0,
@@ -53,6 +67,7 @@ export class ImageEditor {
 			default: 0,
 			label: "Invert",
 			getString: (value) => `invert(${value}%)`,
+			icon: invertIcon,
 		},
 		"hue-rotate": {
 			min: 0,
@@ -61,6 +76,7 @@ export class ImageEditor {
 			default: 0,
 			label: "Hue-rotate",
 			getString: (value) => `hue-rotate(${value}deg)`,
+			icon: hueRotateIcon,
 		},
 		pixelate: {
 			min: 0,
@@ -69,6 +85,7 @@ export class ImageEditor {
 			default: 10,
 			label: "Pixelate",
 			getString: (value) => "", //Pixelation happens elsewhere
+			icon: pixelateIcon,
 		},
 		outline: {
 			default: 0,
@@ -77,6 +94,7 @@ export class ImageEditor {
 			step: 25,
 			getString: () => "",
 			label: "Outline",
+			icon: outlineIcon,
 		},
 	};
 
@@ -116,7 +134,13 @@ export class ImageEditor {
 			const filter = this.filters[filterKey as FilterType];
 			const filterId = `control--${filterKey}`;
 
+			// Filter container
+			const filterContainer = document.createElement("li");
+			filterContainer.classList.add("filter");
+
+			// Filter input
 			const filterInput = document.createElement("input");
+			filterInput.classList.add("filter__slider");
 			filterInput.type = "range";
 			filterInput.min = filter.min.toString();
 			filterInput.max = filter.max.toString();
@@ -125,17 +149,27 @@ export class ImageEditor {
 			filterInput.value = filter.default.toString();
 			filter.input = filterInput;
 
+			// Filter label
 			const filterLabel = document.createElement("label");
 			filterLabel.innerText = `${filter.label} ${filterInput.value}`;
 			filterLabel.htmlFor = filterId;
 			filterLabel.draggable = false;
 
-			const filterContainer = document.createElement("li");
+			// Filter icon
+			const filterImage = document.createElement("img");
+			filterImage.classList.add("filter__icon");
+			filterImage.ariaHidden = "true";
+			filterImage.src = filter.icon;
+
+			// Add elements to the filter
+			filterContainer.appendChild(filterImage);
 			filterContainer.appendChild(filterLabel);
 			filterContainer.appendChild(filterInput);
 
+			// Add filter to the main filters list
 			filtersContainer.appendChild(filterContainer);
 			filterInput.addEventListener("change", (ev) => {
+				filterLabel.innerText = `${filter.label} ${filterInput.value}`;
 				this.reRender();
 			});
 			filterInput.addEventListener("mousemove", () => {

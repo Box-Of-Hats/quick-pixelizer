@@ -6,4 +6,5 @@ export interface Filter {
 	input?: HTMLInputElement;
 	getString: (value: string) => string;
 	default: number;
+	icon: string;
 }
