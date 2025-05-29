@@ -352,6 +352,7 @@ export class ImageEditor {
 		});
 
 		this.dom.canvas.addEventListener("pointerup", (ev) => {
+			ev.preventDefault();
 			if (!this.startMouse || !this.image) return;
 
 			const startX = Math.min(this.startMouse.x, ev.offsetX);
