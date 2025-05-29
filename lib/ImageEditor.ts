@@ -99,7 +99,8 @@ export class ImageEditor {
 		},
 		block: {
 			default: 0,
-			getString: () => `blur(20px) blur(10px)`,
+			getString: (value) =>
+				`blur(${parseInt(value) ? 20 : 0}px) blur(${parseInt(value) ? 10 : 0}px)`,
 			icon: blockIcon,
 			label: "Block",
 			min: 0,
