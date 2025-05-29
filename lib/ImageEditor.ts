@@ -16,6 +16,8 @@ import greyscaleIcon from "../icons/greyscale.png";
 import hueRotateIcon from "../icons/hueRotate.png";
 //@ts-ignore
 import outlineIcon from "../icons/outline.png";
+//@ts-ignore
+import blockIcon from "../icons/block.jpg";
 
 /**
  * An image editor component
@@ -94,6 +96,15 @@ export class ImageEditor {
 			getString: () => "", //Outline happens elsewhere
 			label: "Outline",
 			icon: outlineIcon,
+		},
+		block: {
+			default: 0,
+			getString: () => `blur(20px) blur(10px)`,
+			icon: blockIcon,
+			label: "Block",
+			min: 0,
+			max: 1,
+			step: 1,
 		},
 	};
 
@@ -560,6 +571,12 @@ export class ImageEditor {
 				region.height
 			);
 			this.canvasCtx.lineWidth = 1;
+		}
+
+		const blockValue = parseInt(this.filters.block.input?.value ?? "0");
+		if (blockValue > 0) {
+			this.canvasCtx.fillStyle = "#000000";
+			this.canvasCtx.fillRect(region.x, region.y, region.width, region.height);
 		}
 
 		// Copy the contents of the working canvas back to the main canvas

@@ -4,4 +4,5 @@ export type FilterType =
 	| "invert"
 	| "pixelate"
 	| "greyscale"
+	| "block"
 	| "outline";
