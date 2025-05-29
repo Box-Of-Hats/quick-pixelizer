@@ -5,5 +5,4 @@
 # folders
 node_modules
 .cache
-.parcel-cache
 dist/*
