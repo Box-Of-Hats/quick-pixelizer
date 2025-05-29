@@ -47,8 +47,7 @@ export class ImageEditor {
 			step: 1,
 			label: "Blur",
 			default: 0,
-			getString: (value) =>
-				`blur(${value}px) blur(${parseInt(value) / 2}px)`,
+			getString: (value) => `blur(${value}px) blur(${parseInt(value) / 2}px)`,
 			icon: blurIcon,
 		},
 		greyscale: {
@@ -92,7 +91,7 @@ export class ImageEditor {
 			min: 0,
 			max: 100,
 			step: 25,
-			getString: () => "",
+			getString: () => "", //Outline happens elsewhere
 			label: "Outline",
 			icon: outlineIcon,
 		},
@@ -177,14 +176,19 @@ export class ImageEditor {
 			});
 		}
 
-		const buttonContainer = document.createElement("div");
-		buttonContainer.classList.add("image-editor__buttons");
-		this.dom.controlsParent.appendChild(buttonContainer);
+		// Create button containers
+		const buttonRow1 = document.createElement("div");
+		buttonRow1.classList.add("image-editor__buttons");
+		this.dom.controlsParent.appendChild(buttonRow1);
+
+		const buttonRow2 = document.createElement("div");
+		buttonRow2.classList.add("image-editor__buttons");
+		this.dom.controlsParent.appendChild(buttonRow2);
 
 		const undoButton = createMaterialButton("undo", "Undo", () =>
 			this.undoSelection()
 		);
-		buttonContainer.appendChild(undoButton);
+		buttonRow1.appendChild(undoButton);
 
 		const copyButton = createMaterialButton(
 			"content_copy",
@@ -200,7 +204,7 @@ export class ImageEditor {
 				}, 1500);
 			}
 		);
-		buttonContainer.appendChild(copyButton);
+		buttonRow1.appendChild(copyButton);
 
 		const saveDefaults = createMaterialButton(
 			"save",
@@ -216,7 +220,52 @@ export class ImageEditor {
 				}, 1500);
 			}
 		);
-		buttonContainer.appendChild(saveDefaults);
+		buttonRow1.appendChild(saveDefaults);
+
+		// Create hidden file upload for use with file uploads
+		const hiddenFileInput = document.createElement("input");
+		hiddenFileInput.type = "file";
+		hiddenFileInput.style.display = "none";
+		hiddenFileInput.addEventListener("change", (event) => {
+			const uploadedImage = hiddenFileInput.files
+				? hiddenFileInput.files[0]
+				: null;
+			if (!uploadedImage) {
+				return;
+			}
+			this.selections = [];
+			this.image = uploadedImage;
+			this.loadImageIntoCanvas(this.dom.canvas, uploadedImage);
+		});
+		buttonRow1.appendChild(hiddenFileInput);
+
+		// Upload image button
+		const uploadButton = createMaterialButton(
+			"upload_file",
+			"Upload image",
+			(event) => {
+				hiddenFileInput.click();
+			},
+			"#187795"
+		);
+		buttonRow2.appendChild(uploadButton);
+
+		const downloadLink = document.createElement("a");
+		downloadLink.style.display = "none";
+		buttonRow2.appendChild(downloadLink);
+
+		const saveImageButton = createMaterialButton(
+			"download",
+			"Download image",
+			(event) => {
+				const image = this.dom.canvas.toDataURL("image/jpg");
+				downloadLink.href = image;
+				downloadLink.download = `pixelizer-image-${Date.now()}.jpg`;
+				downloadLink.click();
+			},
+			"#187795"
+		);
+		buttonRow2.appendChild(saveImageButton);
 
 		const gitHubLink = document.createElement("a");
 		gitHubLink.innerText = "view on github";
@@ -453,9 +502,7 @@ export class ImageEditor {
 			}
 		}
 
-		const pixelateValue = parseInt(
-			this.filters.pixelate.input?.value ?? "0"
-		);
+		const pixelateValue = parseInt(this.filters.pixelate.input?.value ?? "0");
 		if (pixelateValue > 0) {
 			// Pixelate the region
 			const scaleFactor = 1 / pixelateValue;
@@ -500,9 +547,7 @@ export class ImageEditor {
 		}
 
 		// Add feint outline around selection
-		const outlineValue = parseInt(
-			this.filters.outline?.input?.value ?? "0"
-		);
+		const outlineValue = parseInt(this.filters.outline?.input?.value ?? "0");
 		if (outlineValue > 0) {
 			this.canvasCtx.strokeStyle = `#000000${outlineValue}`;
 			this.canvasCtx.strokeRect(
