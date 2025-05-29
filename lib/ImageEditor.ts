@@ -89,8 +89,8 @@ export class ImageEditor {
 		outline: {
 			default: 0,
 			min: 0,
-			max: 100,
-			step: 25,
+			max: 25,
+			step: 1,
 			getString: () => "", //Outline happens elsewhere
 			label: "Outline",
 			icon: outlineIcon,
@@ -549,13 +549,15 @@ export class ImageEditor {
 		// Add feint outline around selection
 		const outlineValue = parseInt(this.filters.outline?.input?.value ?? "0");
 		if (outlineValue > 0) {
-			this.canvasCtx.strokeStyle = `#000000${outlineValue}`;
+			this.canvasCtx.strokeStyle = `#000000`;
+			this.canvasCtx.lineWidth = outlineValue;
 			this.canvasCtx.strokeRect(
 				region.x,
 				region.y,
 				region.width,
 				region.height
 			);
+			this.canvasCtx.lineWidth = 1;
 		}
 
 		// Copy the contents of the working canvas back to the main canvas
