@@ -336,6 +336,7 @@ export class ImageEditor {
 		});
 
 		this.dom.canvas.addEventListener("pointerdown", (ev) => {
+			ev.preventDefault();
 			this.startMouse = {
 				x: ev.offsetX,
 				y: ev.offsetY,
